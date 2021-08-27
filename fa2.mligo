@@ -1,0 +1,1 @@
+(* An FA2 contract template *)
