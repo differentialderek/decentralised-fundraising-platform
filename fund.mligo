@@ -31,7 +31,7 @@ type storage = {
 [@inline] let error_NOT_AUTHORIZED_TO_VOTE = 4n
 [@inline] let error_FUNDS_ARE_FROZEN_BY_PROJECT_CONTRIBUTORS = 5n
 [@inline] let error_NOT_ENOUGH_VOTES_FOR_EMERGENCY_FUNDING = 6n
-
+[@inline] let error_NOT_A_CONTRIBUTOR = 7n
 
 (* ============================================================================
  * Entrypoints
@@ -58,11 +58,12 @@ type fund_project = project_id
 type access_funds =
 | NextDisbursal of project_id 
 | EmergencyFund of project_id
+type reject_funds = project_id * address 
 type vote = 
 | NextDisbursal of project_id // vote negative
 | EmergencyFund of project_id // vote affirmative
-type terminate_project = 
-type complete_project = (int ticket) * address // the gov token ticket and the gov token address
+type terminate_project = project_id
+type complete_project = (unit ticket option) * address // the gov token ticket and the gov token address
 
 
 // FA2 types 
@@ -82,6 +83,7 @@ type entrypoint =
 | UpdateProjectDescription of update_project_description
 | FundProject of fund_project
 | AccessFunds of access_funds
+| RejectFunds of reject_funds
 | Vote of vote 
 | TerminateProject of terminate_project 
 | CompleteProject of complete_project
@@ -220,6 +222,23 @@ let access_funds (param : access_funds) (storage : storage) : result =
         // op_disburse = ... 
         (([] : operation list), storage)
     )
+
+(*****  Reject Funds (donations)  *****)
+
+let reject_funds (param : reject_funds) (storage : storage) : result = 
+        let (id, addr_to_reject) = param in 
+        let proj = (
+            match (Big_map.find_op id storage.projects) with 
+            | None -> (failwith error_NO_PROJECT_FOUND : result)
+            | Some p -> p
+        ) in 
+        match (Big_map.find_op addr_to_reject proj.contributors) with 
+        | None -> (failwith error_NOT_A_CONTRIBUTOR : result)
+        | Some amt -> (
+            let op_return_funds = 
+                Tezos.transaction () addr_to_reject amt in 
+            ([op_return_funds], storage)
+        )
 
 
 (*****  Vote  *****)
