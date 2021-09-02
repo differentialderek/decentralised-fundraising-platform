@@ -7,8 +7,10 @@
 // Short-term TODOs:
 // TODO : How are rounds updated? How to know timeline? How to know which round you're in?
 //        This affects: access_funds and vote and complete_project in particular
-// TODO : Each project gets an FA2 contract for its tokens
 // TODO : When voting to restrict funds does this lock the project and it can only be terminated?
+// TODO : Keep track of treasury -- either each project gets its own contract or keep track internally 
+//        from a security standpoint, each having their own might be best 
+//        they would be project smart contracts.
 
 (* ============================================================================
  * Storage
@@ -32,6 +34,7 @@ type storage = {
 [@inline] let error_FUNDS_ARE_FROZEN_BY_PROJECT_CONTRIBUTORS = 5n
 [@inline] let error_NOT_ENOUGH_VOTES_FOR_EMERGENCY_FUNDING = 6n
 [@inline] let error_NOT_A_CONTRIBUTOR = 7n
+[@inline] let error_NOT_AUTHORIZED_TO_TERMINATE_PROJECT = 8n
 
 (* ============================================================================
  * Entrypoints
@@ -45,12 +48,17 @@ type project = {
     contributors : (address, nat) big_map ;
     disbursement_rounds : int ;
     current_round : int * nat * nat ; // (current_round, votes_next_round, votes_emergency)
+    termination_status : nat * bool * (address set) ; // (votes to terminate, termination status)
     timeline : (int, timestamp) map ;
     fa2_addr : address ;
 }
 
 type project_id = int
 type project_description = string 
+type termination_action = 
+| ChangeTerminationStatus of unit 
+| WithdrawFunds of unit 
+| VoteTerminate of unit
 
 type new_project = string * timestamp * nat * int // description, deadline, goal, rounds
 type update_project_description = project_id * project_description
@@ -62,8 +70,8 @@ type reject_funds = project_id * address
 type vote = 
 | NextDisbursal of project_id // vote negative
 | EmergencyFund of project_id // vote affirmative
-type terminate_project = project_id
-type complete_project = (unit ticket option) * address // the gov token ticket and the gov token address
+type terminate_project = project_id * termination_action
+type complete_project = ((unit ticket) * address) option // the gov token ticket and the gov token address
 
 
 // FA2 types 
@@ -292,24 +300,71 @@ let vote (param : vote) (storage: storage) : result =
     (([] : operation list), storage)
 
 
-
-
 (*****  Terminate Project  *****)
 
 let terminate_project (param : terminate_project) (storage : storage) : result = 
-    // TODO :
-    //  * anyone can terminate a project if the "shareholders" vote so -- they get a comission for doing so
-    //  * otherwise the owner can unilaterally do it
-    //  * map over the contributors transactions that send them their money (or some fraction of it)
-    //      * TODO : account for gas fees ; maybe governance sets this percentage 
-    //  * take commission (levels set by governance)
+    let (id, termination_action) = param in 
+    let proj = (
+        match (Big_map.find_op id storage.projects) with 
+        | None -> (failwith error_NO_PROJECT_FOUND : result)
+        | Some p -> p
+    ) in 
+    let (votes_terminate, status, voted) = proj.termination_status in 
 
-    (([] : operation list), storage)
+    match termination_action with
+    | ChangeTerminationStatus () -> (
+        // check failing conditions 
+        if (Tezos.source <> proj.owner) && (votes_terminate < (proj.funding_acquired / 2))
+        then (failwith error_NOT_AUTHORIZED_TO_TERMINATE_PROJECT : result) else
+        
+        // change termination status to true 
+        let updated_proj = {proj with termination_status = (votes_terminate, true, voted);} in 
+        let updated_projs = Big_map.update id (Some updated_proj) storage.projects in 
+        let updated_storage = {storage with
+            projects = updated_projs;
+        } in 
+        (([] : operation list), updated_storage)
+        )
+    | WithdrawFunds () -> (
+        let contribution_amt = (
+            match (Big_map.find_op Tezos.sender proj.contributors) with 
+            | None -> (failwith )
+            | Some n -> n
+        ) in 
+        let refund = contribution_amt in // TODO : make proportional to current treasury amt 
+        let op_refund = Tezos.transaction () Tezos.source (1mutez * refund) in 
+        ([op_refund] , storage)
+        )
+    | VoteTerminate () -> (
+        if (Set.mem Tezos.source votes) then (failwith ) else
+        let voting_power : nat = (
+            match (Big_map.find_op Tezos.source proj.congributors) with 
+            | None -> (failwith )
+            | Some n -> n
+        ) in
+        let new_termination_status = (votes_terminate + voting_power, status, voted) in 
+        let updated_proj = {proj with termination_status = new_termination_status} in 
+        let updated_projs = Big_map.update id (Some updated_proj) storage.projects in 
+        let updated_storage = {storage with
+            projects = updated_projs;
+        } in 
+        (([] : operation list), updated_storage)
+        )
 
 
 (*****  Complete Project   *****)
 
 let complete_project (param : complete_project ) (storage : storage) : result= 
+    match param with 
+    | Some (new_fa2_ticket, address) -> (
+        // TODO : transfer big map to their specified FA2, using the 
+        //        ticket to access the storage on a one-time basis 
+    )
+    | None -> (
+        // spins up a new fa2 ...
+        // TODO : should contracts get their own FA2?
+    )
+
     // TODO : 
     //  * either add them as the admins on the FA2 contract attached or transfer all the data to a new FA2
     //  * release funds (the 10% kept behind)
@@ -320,8 +375,9 @@ let complete_project (param : complete_project ) (storage : storage) : result=
 
 
 
-
-(*****  FA2 Functionality   *****)
+(***** ***** ***** *****
+  FA2 Functionality   
+ ***** ***** ***** *****)
 
 let rec transfer (param , storage : transfer * storage) : result = 
     let (fa2_from, transfers_list) = param in
