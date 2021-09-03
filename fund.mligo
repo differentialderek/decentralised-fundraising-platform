@@ -5,6 +5,7 @@
 // TODO : Incentive systems against rug pulls 
 
 // Short-term TODOs:
+// TODO : Reject funds entrypoint function 
 // TODO : How are rounds updated? How to know timeline? How to know which round you're in?
 //        This affects: access_funds and vote and complete_project in particular
 // TODO : When voting to restrict funds does this lock the project and it can only be terminated?
