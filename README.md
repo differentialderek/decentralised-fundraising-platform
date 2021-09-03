@@ -1,7 +1,6 @@
 # Fund
-A Decentralised Fundraising Platform for Decentralised Projects: Building projects owned and funded by the community.
-
-Built on Tezos
+A Decentralised Fundraising Platform for Decentralised Projects: 
+Building projects owned and funded by the community.
 
 ## Key Features
 
