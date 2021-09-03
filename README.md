@@ -4,7 +4,7 @@ Building projects owned and funded by the community.
 
 ## Key Features
 
-This platform is a decentralised way of raising funds for decentralised projects. Investors can choose projects to fund. In exchange for their investment, they receive "investment" tokens, which later mature into governance tokens for the project they funded. Projects initiated will outline a timetable for disbursement of funds, which must be at least four rounds for security purposes; at any point, the stakeholders can vote to terminate the project and get a refund of the funds that remain.
+This platform is a decentralised way of raising funds for decentralised projects. Investors can choose projects to fund. In exchange for their investment, they receive "pre-governance" tokens, which later mature into governance tokens for the project they funded. Projects initiated will outline a timetable for disbursement of funds, which must be at least four rounds for security purposes; at any point, the stakeholders can vote to terminate the project and get a refund of the funds that remain.
 
 The key feature here is early and active community involvement in a decentralised project. Projects interact with their community in every step of the process. The project has the responsibility of keeping their stakeholders informed on the progress and development of the project. If they ghost their stakeholders, stakeholders have mechanisms in place where they can get a refund on their investment.
 
@@ -23,7 +23,7 @@ To start a new project on Fund, an address must provide a project description, a
 There are several accounability mechanisms that tie the company's interest to investors, who will ideally be future users:
 * Investors can vote during any round to withold funding if the team isn't keeping them up to date with development or is unconvincing in the progress they've made.
 * Investors can vote to terminate the project at any time and withdraw (what is left of) their invested funds.
-* Rounds of funding must be such that at least two funding rounds must go by before the company receives >50% of funding. This prevents them from buying up the "investment" tokens and blocking any attempts to terminate or restrict funding by the investors.
+* Rounds of funding must be such that at least two funding rounds must go by before the company receives >50% of funding. This prevents them from buying up the "pre-governance" tokens and blocking any attempts to terminate or restrict funding by the investors.
 * In order to access the last round of funding, the project owner must airdrop governance tokens to investors.
 
 ## Completing a Project
