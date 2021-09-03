@@ -27,5 +27,5 @@ There are several accounability mechanisms that tie the company's interest to in
 * Rounds of funding must be such that at least two funding rounds must go by before the company receives >50% of funding. This prevents them from buying up the "investment" tokens and blocking any attempts to terminate or restrict funding by the investors.
 * In order to access the last round of funding, the project owner must airdrop governance tokens to investors.
 
-## Ending a Project
+## Completing a Project
 Every step of the project is governed by investors, so it is the responsibility of the project owner to keep the investors satisfied with their progress in order to keep having access to funds. In order to complete the project, a project must airdrop governance tokens to investors. This aligns incentives to create decentralised projects from decentralised funding: projects funded and owned by the community.
